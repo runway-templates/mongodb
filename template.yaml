@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/runway-templates/schema/refs/heads/main/v1alpha1.json
+apiVersion: schema.runway.horse/templates/v1alpha1
+kind: Template
+
+metadata:
+  name: mongodb
+  version: 1.0.0
+  displayName: MongoDB
+  description: |
+    Document database. Single instance with authentication and persistence on
+    a volume. Good for development, staging, and small production workloads.
+    No replica set, so no failover and no transactions across documents.
+  category: database
+  tags: [mongodb, nosql, document, json, database]
+  logo: ./logo.svg
+  documentation: https://www.mongodb.com/docs/manual/
+  website: https://www.mongodb.com
+  source: https://github.com/mongodb/mongo
+  license: SSPL-1.0
+  maintainer: runway
+
+inputs:
+  image_tag:
+    type: string
+    default: "8.0"
+    enum: ["8.0", "8.3", "7.0"]
+    description: |
+      MongoDB version. 8.0 and 8.3 are supported until Oct 2029, 7.0 until
+      Aug 2027. Major upgrades must go one release at a time and need
+      featureCompatibilityVersion set first — do not jump this after deploy.
+
+  database_name:
+    type: string
+    default: "app"
+    pattern: "^[a-zA-Z][a-zA-Z0-9_-]{0,62}$"
+    description: Application database. Created on first write, not at startup.
+
+  username:
+    type: string
+    default: "app"
+    pattern: "^[a-zA-Z][a-zA-Z0-9_-]{0,31}$"
+    description: |
+      Root user, created in the admin database on first start. Has full
+      cluster access.
+
+services:
+  - name: mongodb
+    image: "r.planetary-quantum.com/docker-hub-proxy/library/mongo:${{ inputs.image_tag }}"
+
+    # No command override: the entrypoint reads MONGO_INITDB_* to create the
+    # root user before starting mongod --auth. Overriding it skips that.
+
+    env:
+      PORT: "27017"
+      MONGO_INITDB_ROOT_USERNAME: "${{ inputs.username }}"
+      MONGO_INITDB_ROOT_PASSWORD:
+        value: "${{ runway.secret(32) }}"
+        description: Root password, set when the database is first created.
+        warning: |
+          Only read on the very first start, when the data directory is
+          empty. Changing it here will NOT change the password in MongoDB and
+          leaves your clients with a value that does not work. Rotate with
+          db.changeUserPassword() over a connection instead.
+      MONGO_INITDB_DATABASE: "${{ inputs.database_name }}"
+
+    volume:
+      mountPath: /data/db
+
+    healthcheck:
+      type: exec
+      command:
+        - mongosh
+        - --quiet
+        - --eval
+        - "db.adminCommand('ping')"
+      # First start creates the user and builds the data files.
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+
+    settings:
+      # No TLS on this listener; auth is the only gate.
+      route: false
+
+    # First plan with persistent storage and enough RAM for a working set.
+    minPlan: scale-m-launch
