@@ -66,6 +66,11 @@ services:
     volume:
       mountPath: /data/db
 
+    # the image starts as root and drops to mongodb in its entrypoint
+    runAs:
+      user: 999
+      group: 999
+
     healthcheck:
       type: exec
       command:
