@@ -20,17 +20,24 @@ WIP
 
 ## Connecting
 
-Not routed — reachable only from inside your organization's network. The
-credentials are in the app config:
+Not routed — reachable only from inside your organization's network, at:
+
+```
+<app>.<app>.svc.cluster.local:27017
+```
+
+`<app>` is your app name.
+
+The credentials are in the app config:
 
 ```sh
-runway app config ls --app my-mongo
+runway app config ls --app <app>
 ```
 
 Authenticate against `admin`, which is where the user is created:
 
 ```
-mongodb://<username>:<MONGO_INITDB_ROOT_PASSWORD>@my-mongo.my-mongo.svc.cluster.local:27017/<database_name>?authSource=admin
+mongodb://<username>:<MONGO_INITDB_ROOT_PASSWORD>@<app>.<app>.svc.cluster.local:27017/<database_name>?authSource=admin
 ```
 
 ## Notes
