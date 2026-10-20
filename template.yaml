@@ -4,7 +4,7 @@ kind: Template
 
 metadata:
   name: mongodb
-  version: 0.1.0
+  version: 0.2.0
   displayName: MongoDB
   description: |
     Document database. Single instance with authentication and persistence on
@@ -70,6 +70,10 @@ services:
     runAs:
       user: 999
       group: 999
+
+    outputs:
+      # The root user lives in the admin database.
+      DSN: "mongodb://${{ inputs.username }}:${{ env.MONGO_INITDB_ROOT_PASSWORD }}@${{ runway.internal_address }}/${{ inputs.database_name }}?authSource=admin"
 
     healthcheck:
       type: exec

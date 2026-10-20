@@ -18,6 +18,10 @@ WIP
 | `database_name` | `app` | Created on first write, not at startup |
 | `username` | `app` | Root user in the `admin` database |
 
+## Outputs
+
+`DSN`
+
 ## Connecting
 
 Not routed — reachable only from inside your organization's network, at:
